@@ -1,37 +1,72 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import Main from './pages/Main';
-import Detail from './pages/Detail';
-import Search from './pages/Search';
-import Favorites from './pages/Favorites';
+import React, { useState, Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+
+const Main = lazy(() => import('./pages/Main'));
+const Detail = lazy(() => import('./pages/Detail'));
+const Search = lazy(() => import('./pages/Search'));
+const Favorites = lazy(() => import('./pages/Favorites'));
+
+// 검색창과 네비게이션을 위한 Layout 컴포넌트
+const Layout = ({ children }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // 페이지 이동 시 검색창 초기화 (선택적)
+  useEffect(() => {
+    if (!location.pathname.startsWith('/search')) {
+      setSearchTerm('');
+    }
+  }, [location]);
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    if (value) {
+      navigate(`/search?query=${value}`);
+    } else {
+      navigate('/');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 font-sans">
+      <header className="bg-black text-white shadow-md sticky top-0 z-20 border-t-4 border-red-600">
+        <nav className="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center">
+          <Link to="/" className="text-3xl font-bold mb-2 sm:mb-0">포켓몬 도감</Link>
+          <div className="flex items-center space-x-4">
+            <input
+              type="text"
+              placeholder="포켓몬 검색..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="w-48 p-2 rounded-md text-black"
+            />
+            <Link to="/" className="hover:text-yellow-300 transition">홈</Link>
+            <Link to="/favorites" className="hover:text-yellow-300 transition">찜목록</Link>
+          </div>
+        </nav>
+      </header>
+      <main className="container mx-auto p-6">
+        {children}
+      </main>
+    </div>
+  );
+};
 
 function App() {
   return (
-    // 1. Router가 전체 앱을 감싸서 라우팅 기능을 활성화합니다.
     <Router>
-      <div className="min-h-screen bg-gray-100 font-sans">
-        {/* 2. 모든 페이지에 공통으로 보일 헤더 (네비게이션) */}
-        <header className="bg-red-600 text-white shadow-md">
-          <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-            <Link to="/" className="text-2xl font-bold">포켓몬 도감</Link>
-            <div className="space-x-4">
-              <Link to="/" className="hover:text-yellow-300">홈</Link>
-              <Link to="/search" className="hover:text-yellow-300">검색</Link>
-              <Link to="/favorites" className="hover:text-yellow-300">찜목록</Link>
-            </div>
-          </nav>
-        </header>
-
-        {/* 3. 주소 경로에 따라 이 부분의 내용만 바뀝니다. */}
-        <main className="container mx-auto p-6">
+      <Layout>
+        <Suspense fallback={<div className="text-center mt-10 text-xl font-bold">페이지를 불러오는 중입니다...</div>}>
           <Routes>
             <Route path="/" element={<Main />} />
             <Route path="/pokemon/:pokemonId" element={<Detail />} />
             <Route path="/search" element={<Search />} />
-            <Route path="/favorites"element={<Favorites />} />
+            <Route path="/favorites" element={<Favorites />} />
           </Routes>
-        </main>
-      </div>
+        </Suspense>
+      </Layout>
     </Router>
   );
 }
